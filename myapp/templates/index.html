@@ -35,6 +35,7 @@
             display: block;
             transition: transform 0.3s;
         }
+
         button:hover {
             transform: scale(1.1); /* Escala un 10% más grande cuando el cursor está sobre el botón */
         }
@@ -56,11 +57,16 @@
         #estadisticas {
             background-color: #f39c12; /* Amarillo */
         }
+        button:disabled {
+          background-color: #cccccc; /* Cambia el color a gris */
+          opacity: 0.6;
+          /* Otros estilos de diseño que desees */
+        }
     </style>
 </head>
 <body>
     <h1>Elevador</h1>
-    
+
     <div id="button-container">
         <button id="piso1">Piso 1</button>
         <button id="piso2">Piso 2</button>
@@ -68,5 +74,106 @@
 
         <button id="estadisticas">Ver estadísticas</button>
     </div>
+     <script>
+
+        function getDataAndUpdateButtons() {
+          fetch('https://monipanecito.pythonanywhere.com/api/latest-sensor-data/')
+            .then(response => response.json())
+            .then(data => {
+              console.log('Datos recibidos del servidor:', data);
+
+              document.querySelectorAll('button').forEach(button => {
+                button.disabled = false;
+              });
+
+              // Obtener los valores de los sensores del último registro
+              if (data.sensor1 === "1") {
+                const piso1 = document.getElementById('piso1');
+                if (piso1) {
+                  piso1.disabled = true;
+                }
+              }
+              if (data.sensor2 === "1") {
+                const piso2 = document.getElementById('piso2');
+                if (piso2) {
+                  piso2.disabled = true;
+                }
+              }
+              if (data.sensor3 === "1") {
+                const piso3 = document.getElementById('piso3');
+                if (piso3) {
+                  piso3.disabled = true;
+                }
+              }
+
+            })
+            .catch(error => {
+              console.error('Hubo un error al obtener los datos del sensor:', error);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+          // Solicitar el GET al cargar la página
+          getDataAndUpdateButtons();
+
+          // Al presionar un botón, solicitar el GET nuevamente
+          document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function() {
+              getDataAndUpdateButtons();
+            });
+          });
+        });
+
+        function sendData(sensor, val1, val2, val3) {
+          const data = {
+            "sensor1": val1,
+            "sensor2": val2,
+            "sensor3": val3
+          };
+
+          fetch('https://monipanecito.pythonanywhere.com/api/projects/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.text();
+          })
+          .then(data => {
+            console.log('POST request successful:', data);
+            // Aquí puedes manejar la respuesta del servidor si es necesario
+            getDataAndUpdateButtons();
+          })
+          .catch(error => {
+            console.error('There was an error with the POST request:', error);
+          });
+        }
+
+
+
+
+
+        document.getElementById('piso1').addEventListener('click', function() {
+          sendData('sensor1', '1', '0', '0');
+        });
+
+        document.getElementById('piso2').addEventListener('click', function() {
+          sendData('sensor2', '0', '1', '0');
+        });
+
+        document.getElementById('piso3').addEventListener('click', function() {
+          sendData('sensor3', '0', '0', '1');
+        });
+
+
+
+
+
+      </script>
 </body>
 </html>
